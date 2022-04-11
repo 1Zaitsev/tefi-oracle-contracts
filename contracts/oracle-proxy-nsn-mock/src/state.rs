@@ -1,7 +1,7 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_std::{Addr, Decimal, StdResult, Storage};
+use cosmwasm_std::{Addr, StdResult, Storage};
 use cw_storage_plus::{Item, Map};
 use tefi_oracle::proxy::ProxyPriceResponse;
 
@@ -17,20 +17,20 @@ pub struct Config {
     pub source_addr: Addr,
 }
 
-pub fn upsert_price(storage: &mut dyn Storage, symbol: &str, rate: Decimal) -> StdResult<ProxyPriceResponse> {
-    match KEY_PRICES.may_load(storage, symbol)?{
-        None => {
-            //TODO: calculate_curent_time and safe as last_updated
-            let last_updated = 0;
-            let response = ProxyPriceResponse{
-                rate,
-                last_updated
-            };
-            KEY_PRICES.save(storage, symbol, &response)?;
-            Ok(response)
-        },
-        Some(value) => {//TODO: update},
-    }
+pub fn upsert_price(storage: &mut dyn Storage, symbol: &str, price_info: ProxyPriceResponse) -> StdResult<ProxyPriceResponse> {
+    KEY_PRICES.update(storage, symbol, |p: Option<ProxyPriceResponse>| -> StdResult<ProxyPriceResponse>{
+        match p {
+            Some(mut value) => {
+                value = price_info;
+                Ok(value)
+            }
+            None => Ok(price_info),
+        }
+    })
+}
+
+pub fn load_price(storage: &dyn Storage, symbol: &str) -> StdResult<ProxyPriceResponse> {
+    KEY_PRICES.load(storage, symbol)
 }
 
 impl Config {

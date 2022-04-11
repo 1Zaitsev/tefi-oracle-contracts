@@ -5,8 +5,8 @@ use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response,
 use cw2::set_contract_version;
 use tefi_oracle::proxy::{ProxyPriceResponse, ProxyQueryMsg};
 
-use crate::msg::{ConfigResponse, InstantiateMsg, QueryMsg};
-use crate::state::{Config, CONFIG};
+use crate::msg::{ConfigResponse, ExecuteMsg, InstantiateMsg, QueryMsg};
+use crate::state::{Config, CONFIG, load_price, upsert_price};
 use crate::ContractError;
 
 // version info for migration info
@@ -44,18 +44,35 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
     res.map_err(|err| err.into())
 }
 
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn execute(
+    deps: DepsMut,
+    env: Env,
+    _info: MessageInfo,
+    msg: ExecuteMsg,
+) -> StdResult<Response> {
+    match msg {
+        ExecuteMsg::FeedPrice { symbol, rate } => {
+            let result = upsert_price(deps.storage, &symbol, ProxyPriceResponse {
+                rate,
+                last_updated: env.block.time.seconds(),
+            })?;
+            Ok(Response::new().add_attributes(vec![
+                ("action", "feed_price"),
+                ("symbol", &symbol),
+                ("rate", &result.rate.to_string()),
+                ("rate", &result.last_updated.to_string()),
+            ]))
+        }
+    }
+}
+
 pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     let config = CONFIG.load(deps.storage)?;
 
     Ok(config.as_res())
 }
 
-pub fn query_price(_deps: Deps, _env: Env, _symbol: String) -> StdResult<ProxyPriceResponse> {
-    // fetch the price from the corresponding source and convert to the standard format
-    // pub struct ProxyPriceResponse {
-    //     pub rate: Decimal, // rate denominated in base_denom
-    //     pub last_updated: u64, // timestamp in seconds
-    // }
-
-    unimplemented!()
+pub fn query_price(deps: Deps, _env: Env, symbol: String) -> StdResult<ProxyPriceResponse> {
+    load_price(deps.storage, &symbol)
 }

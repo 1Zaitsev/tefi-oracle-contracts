@@ -1,3 +1,4 @@
+use cosmwasm_std::Decimal;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use tefi_oracle::proxy::ProxyQueryMsg;
@@ -17,4 +18,13 @@ pub struct ConfigResponse {
 pub enum QueryMsg {
     Base(ProxyQueryMsg),
     Config {},
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum ExecuteMsg {
+    FeedPrice {
+        symbol: String,
+        rate: Decimal,
+    }
 }
