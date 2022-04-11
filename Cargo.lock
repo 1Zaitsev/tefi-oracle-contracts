@@ -408,6 +408,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "oracle-proxy-nsn-mock"
+version = "0.1.0"
+dependencies = [
+ "cosmwasm-schema",
+ "cosmwasm-std",
+ "cw-storage-plus",
+ "cw2",
+ "schemars",
+ "serde",
+ "tefi-oracle",
+ "thiserror",
+]
+
+[[package]]
 name = "oracle-proxy-template"
 version = "0.2.0"
 dependencies = [
